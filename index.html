@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>烘焙变量查询</title>
+    <style>
+      :root{
+        --bg:#faf5ec;
+        --surface:#fffdf8;
+        --surface2:#f3ead9;
+        --ink:#2b1d12;
+        --ink2:#6d5a48;
+        --line:#e3d5bf;
+        --accent:#b4551f;
+        --accent-ink:#fff8f0;
+        --accent-soft:#f6e3d3;
+        --gold:#a97b1e;
+        --shadow:0 1px 2px rgba(80,50,20,.08),0 6px 18px rgba(80,50,20,.07);
+        --radius:14px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#1b130d;
+          --surface:#271b12;
+          --surface2:#32241a;
+          --ink:#f3e7d8;
+          --ink2:#bfa88f;
+          --line:#473423;
+          --accent:#e07b3a;
+          --accent-ink:#241305;
+          --accent-soft:#46301e;
+          --gold:#d9a441;
+          --shadow:0 1px 2px rgba(0,0,0,.35),0 6px 18px rgba(0,0,0,.3);
+        }
+      }
+      *{box-sizing:border-box}
+      html{-webkit-text-size-adjust:100%}
+      body{
+        margin:0;background:var(--bg);color:var(--ink);
+        font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+        line-height:1.55;
+      }
+      .serif{font-family:"Songti SC","STSong","Noto Serif SC",Georgia,serif}
+      .wrap{max-width:1060px;margin:0 auto;padding:0 16px 64px}
+
+      /* ---------- 顶部计数台 ---------- */
+      .summary{
+        position:sticky;top:0;z-index:20;
+        background:var(--bg);
+        padding:14px 0 10px;
+        border-bottom:1px solid var(--line);
+      }
+      .summary-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+      .bignum{
+        font-size:52px;line-height:.95;font-weight:700;letter-spacing:-.02em;
+        font-variant-numeric:tabular-nums;
+      }
+      .bignum small{font-size:17px;font-weight:600;color:var(--ink2);letter-spacing:0;margin-left:4px}
+      .summary-text{flex:1;min-width:150px;padding-bottom:4px}
+      .summary-text p{margin:0;font-size:14px;color:var(--ink2)}
+      .summary-text p b{color:var(--ink)}
+      .clearall{
+        appearance:none;border:1px solid var(--line);background:var(--surface);
+        color:var(--accent);font-size:14px;font-weight:600;
+        padding:8px 14px;border-radius:999px;cursor:pointer;min-height:40px;
+      }
+      .clearall:disabled{color:var(--ink2);opacity:.45;cursor:default}
+      .selchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+      .selchips:empty{display:none}
+      .selchip{
+        display:inline-flex;align-items:center;gap:6px;
+        background:var(--accent);color:var(--accent-ink);
+        border:none;border-radius:999px;padding:6px 8px 6px 12px;
+        font-size:13px;font-weight:600;cursor:pointer;min-height:32px;
+      }
+      .selchip span{opacity:.75;font-weight:400}
+      .selchip i{font-style:normal;font-size:15px;line-height:1;padding:2px 4px}
+
+      /* ---------- 说明 ---------- */
+      .intro{margin:20px 0 4px}
+      .intro h1{font-size:24px;margin:0 0 6px;font-weight:700}
+      .intro p{margin:0;color:var(--ink2);font-size:14.5px;max-width:56ch}
+
+      /* ---------- 搜索 ---------- */
+      .searchrow{margin:18px 0 6px}
+      .searchrow input{
+        width:100%;min-height:48px;padding:10px 16px;
+        font-size:16px;color:var(--ink);
+        background:var(--surface);border:1px solid var(--line);border-radius:12px;
+        outline:none;
+      }
+      .searchrow input:focus{border-color:var(--accent)}
+      .searchrow input::placeholder{color:var(--ink2)}
+
+      /* ---------- 变量组 ---------- */
+      .vargroup{margin-top:22px}
+      .vargroup-head{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
+      .vargroup-head h2{font-size:17px;margin:0;font-weight:700}
+      .vargroup-head .picked{font-size:13px;color:var(--accent);font-weight:600}
+      .vargroup-head .hint{font-size:12.5px;color:var(--ink2)}
+      .chips{display:flex;flex-wrap:wrap;gap:8px}
+      .chip{
+        display:inline-flex;align-items:center;gap:7px;
+        min-height:44px;padding:8px 13px;
+        background:var(--surface);border:1.5px solid var(--line);border-radius:12px;
+        font-size:15px;color:var(--ink);cursor:pointer;
+        transition:border-color .15s,background .15s,color .15s,opacity .15s;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .chip .n{
+        font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;
+        background:var(--surface2);color:var(--ink2);
+        border-radius:999px;padding:1px 8px;min-width:26px;text-align:center;
+      }
+      .chip:active{transform:scale(.97)}
+      .chip[aria-pressed="true"]{
+        background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700;
+      }
+      .chip[aria-pressed="true"] .n{background:rgba(255,255,255,.25);color:var(--accent-ink)}
+      @media (prefers-color-scheme: dark){
+        .chip[aria-pressed="true"] .n{background:rgba(0,0,0,.25)}
+      }
+      .chip:disabled{
+        opacity:.38;cursor:not-allowed;background:transparent;
+        border-style:dashed;
+      }
+      .chip:disabled .n{background:transparent}
+
+      /* ---------- 结果 ---------- */
+      .results-head{
+        display:flex;align-items:baseline;gap:10px;
+        margin:30px 0 12px;padding-top:20px;border-top:1px solid var(--line);
+      }
+      .results-head h2{font-size:19px;margin:0}
+      .results-head span{font-size:13.5px;color:var(--ink2)}
+      .grid{display:grid;grid-template-columns:1fr;gap:14px}
+      @media (min-width:560px){.grid{grid-template-columns:1fr 1fr}}
+      @media (min-width:900px){.grid{grid-template-columns:1fr 1fr 1fr}}
+      .card{
+        background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+        overflow:hidden;box-shadow:var(--shadow);text-align:left;width:100%;
+        padding:0;cursor:pointer;color:var(--ink);font:inherit;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .card:active{transform:scale(.99)}
+      .card img{width:100%;height:150px;object-fit:cover;display:block}
+      .card-body{padding:12px 14px 14px}
+      .card h3{margin:0;font-size:17.5px;font-weight:700}
+      .card .orig{margin:1px 0 0;font-size:12.5px;color:var(--gold);font-weight:600}
+      .card .def{margin:7px 0 0;font-size:13.5px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+      .card .formula{
+        margin:10px 0 0;padding-top:9px;border-top:1px dashed var(--line);
+        font-size:12.5px;color:var(--ink2);
+      }
+      .card .formula b{color:var(--accent);font-weight:600}
+      .noresult{
+        display:none;text-align:center;color:var(--ink2);
+        padding:36px 20px;font-size:15px;
+        border:1.5px dashed var(--line);border-radius:var(--radius);
+      }
+      .noresult.show{display:block}
+
+      /* ---------- 详情弹窗 ---------- */
+      dialog{
+        border:1px solid var(--line);border-radius:18px;padding:0;
+        background:var(--surface);color:var(--ink);
+        width:min(560px,calc(100vw - 24px));max-height:88dvh;overflow:auto;
+        box-shadow:0 18px 50px rgba(0,0,0,.28);
+      }
+      dialog::backdrop{background:rgba(30,18,8,.5)}
+      .dlg-close{
+        position:sticky;top:10px;float:right;margin-right:10px;z-index:2;
+        width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
+        background:var(--surface);color:var(--ink);font-size:16px;cursor:pointer;
+      }
+      .dlg-img{width:100%;height:220px;object-fit:cover;display:block;margin-top:-48px}
+      .dlg-body{padding:16px 20px 24px}
+      .dlg-body h3{margin:0;font-size:23px}
+      .dlg-body .orig{margin:2px 0 0;color:var(--gold);font-weight:600;font-size:14px}
+      .spec{
+        margin:14px 0 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+      }
+      .spec div{display:flex;justify-content:space-between;gap:16px;padding:8px 14px;font-size:14px}
+      .spec div:nth-child(odd){background:var(--surface2)}
+      .spec dt{color:var(--ink2)}
+      .spec dd{margin:0;font-weight:600;text-align:right}
+      .dlg-sec{margin-top:16px}
+      .dlg-sec h4{margin:0 0 4px;font-size:14px;color:var(--accent)}
+      .dlg-sec p{margin:0;font-size:14.5px;color:var(--ink)}
+      footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink2);font-size:12.5px}
+      @media (prefers-reduced-motion: reduce){
+        .chip,.card{transition:none}
+        .chip:active,.card:active{transform:none}
+      }
+      button{touch-action:manipulation}
+
+      /* ---------- 移动端 ---------- */
+      @media (max-width:640px){
+        .wrap{padding:0 12px 48px}
+        .summary{padding:10px 0 8px}
+        .summary-row{gap:10px}
+        .bignum{font-size:40px}
+        .bignum small{font-size:15px}
+        .summary-text p{font-size:13px}
+        .clearall{min-height:36px;padding:6px 12px;font-size:13.5px}
+        .selchips{gap:5px;margin-top:8px}
+        .selchip{min-height:30px;font-size:12.5px;padding:5px 7px 5px 10px}
+        .intro{margin:14px 0 2px}
+        .intro h1{font-size:21px}
+        .intro p{font-size:13.5px}
+        .searchrow{margin:14px 0 2px}
+        .vargroup{margin-top:18px}
+        .vargroup-head{gap:6px;margin-bottom:8px}
+        .vargroup-head h2{font-size:16px}
+        .chips{gap:7px}
+        .chip{min-height:42px;padding:7px 11px;font-size:14.5px;border-radius:11px}
+        .results-head{margin:24px 0 10px;padding-top:16px}
+        .results-head h2{font-size:18px}
+        .grid{gap:12px}
+        .card img{height:132px}
+        .card-body{padding:10px 12px 12px}
+        .card h3{font-size:16.5px}
+        dialog{width:calc(100vw - 16px);max-height:92dvh;border-radius:16px}
+        .dlg-img{height:180px}
+        .dlg-body{padding:14px 16px 20px}
+        .dlg-body h3{font-size:21px}
+        footer{margin-top:36px}
+      }
+    </style>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="e01c9f78-4607-4e60-b01c-77c8190b12b4"></script>
+  </head>
+  <body>
+    <div class="wrap">
+
+      <div class="summary" aria-live="polite">
+        <div class="summary-row">
+          <div class="bignum"><span id="bignum">60</span><small>种符合</small></div>
+          <div class="summary-text"><p id="sumtext">共收录 <b>60</b> 种经典烘焙品。点下面的条件，数字会跟着变。</p></div>
+          <button class="clearall" id="clearall" disabled>清除全部</button>
+        </div>
+        <div class="selchips" id="selchips"></div>
+      </div>
+
+      <div class="intro">
+        <h1 class="serif">按条件找烘焙品</h1>
+        <p>每种烘焙品都能拆成六个方面：门类、面团基底、膨松方式、油脂、熟成方式、产地。每个方面都可以多选——同一方面选了几个，就是满足任意一个即可；不同方面之间则要同时满足。选了条件，其他条件旁边的数字会立刻按「还能同时满足的」重新计算；数字变成 0 的条件会直接变灰、点不了，不会出现查了个空的结果。</p>
+      </div>
+
+      <div class="searchrow">
+        <input id="q" type="search" placeholder="也可以直接搜名字：试试「恰巴塔」「法国」「酸」…" aria-label="搜索烘焙品名字" />
+      </div>
+
+      <div id="vargroups"></div>
+
+      <div class="results-head">
+        <h2 class="serif">查询结果</h2>
+        <span id="rescount"></span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="noresult" id="noresult">没有同时满足这些条件的烘焙品——把某个条件放宽一点再试。</p>
+
+      <footer>
+        <p>内容整理自「烘焙百科」：<span id="footcount">60</span> 种经典烘焙品 × 6 个方面，含京沪烘焙房与老字号的常见品类。油脂为定性档位（无油 / 少量 / 中等 / 高），按各品类经典配方判定。图片为各品类实拍，仅作科普示意。</p>
+        <p><a href="https://github.com/holynova/baking-variable-search" target="_blank" rel="noopener">GitHub 仓库：holynova/baking-variable-search</a></p>
+      </footer>
+    </div>
+
+    <dialog id="dlg" aria-labelledby="dlg-name">
+      <button class="dlg-close" id="dlg-close" aria-label="关闭">✕</button>
+      <img class="dlg-img" id="dlg-img" src="assets/img/croissant.jpg" alt="" />
+      <div class="dlg-body">
+        <h3 id="dlg-name" class="serif"></h3>
+        <p class="orig" id="dlg-orig"></p>
+        <dl class="spec" id="dlg-spec"></dl>
+        <div class="dlg-sec"><h4>一句话认识它</h4><p id="dlg-def"></p></div>
+        <div class="dlg-sec"><h4>吃起来</h4><p id="dlg-taste"></p></div>
+        <div class="dlg-sec"><h4>别认错</h4><p id="dlg-confuse"></p></div>
+      </div>
+    </dialog>
+
+    <script>
+      /* ================= 数据：36 种 × 6 个方面 ================= */
+      const ITEMS = [
+        {id:"baguette",n:"法棍面包",o:"Baguette · 法语",c:"法国",cat:"bread",lv:"yeast",dg:"lean",fat:"none",heat:"bake",
+         d:"只有面粉、水、盐、酵母四种原料的细长面包，脆壳、韧芯、麦香纯粹，是法国面包的基准线。",
+         t:"外壳敲起来咔哧响，内部气孔大小不一、带嚼劲；放几小时就变硬，所以法国人每天现买。",
+         x:"和恰巴塔相反：法棍低水、孔细密整齐；恰巴塔高水、孔大而野。"},
+        {id:"ciabatta",n:"恰巴塔",o:"Ciabatta · 意大利语",c:"意大利",cat:"bread",lv:"yeast",dg:"lean",fat:"low",heat:"bake",
+         d:"含水量高达八成的意大利扁面包，内部全是大小不一的大气孔，外皮薄脆，最适合做三明治。",
+         t:"表皮薄而脆，里面湿润绵软、大孔能兜住橄榄油和酱汁，蘸油吃是正解。",
+         x:"和佛卡夏比：恰巴塔是立体面包、切开夹馅；佛卡夏是扁平一张、表面调味直接吃。"},
+        {id:"focaccia",n:"佛卡夏",o:"Focaccia · 意大利语",c:"意大利",cat:"bread",lv:"yeast",dg:"rich",fat:"mid",heat:"bake",
+         d:"铺满一烤盘的扁平面包，手指戳出满面凹洞，浇橄榄油、撒海盐与迷迭香，趁热直接撕着吃。",
+         t:"底部被油煎得微脆，内部柔软湿润，每一口都有油香和海盐的爆点。",
+         x:"和披萨的区别：佛卡夏面团更厚、不加番茄酱与大量奶酪，调味在表面点到为止。"},
+        {id:"sourdough",n:"酸面包",o:"Sourdough · 英语",c:"美国",cat:"bread",lv:"sourdough",dg:"lean",fat:"none",heat:"bake",
+         d:"不用商业酵母，靠一罐养着的面粉水（天然酵种）发酵的面包，带明显酸香，是旧金山的城市名片。",
+         t:"外壳厚而硬脆，内部湿润有韧性，酸味明亮；同样配方，养的酵种不同、酸度就不同。",
+         x:"和乡村面包常是同一只：乡村面包强调「杂粮配比」，酸面包强调「发酵方式」，两个标签可以同时成立。"},
+        {id:"country",n:"乡村面包",o:"Pain de Campagne · 法语",c:"法国",cat:"bread",lv:"sourdough",dg:"lean",fat:"none",heat:"bake",
+         d:"白面掺全麦、黑麦的粗犷大面包，是工业化之前法国农家日常的主食面包，耐放、管饱、麦味浓。",
+         t:"表皮厚实，内里灰褐色、气孔中等，嚼起来有谷物和坚果的回甘，放两三天风味更沉。",
+         x:"别和酸面包对立看：多数乡村面包正用天然酵种发酵，酸香只是它的底色之一。"},
+        {id:"bagel",n:"贝果",o:"Bagel · 意第绪语",c:"波兰 · 犹太传统",cat:"bread",lv:"yeast",dg:"lean",fat:"none",heat:"boilbake",
+         d:"先水煮、再烘烤的圆环面包，表面紧实有光泽，内部紧实有嚼劲，是纽约早餐的图腾。",
+         t:"咬下去先抵抗、再回弹，越嚼越香；切半复烤后夹奶油奶酪是经典吃法。",
+         x:"和甜甜圈只是长得像：贝果是煮烤的面包、无馅少糖；甜甜圈是油炸的甜点面团。"},
+        {id:"pretzel",n:"碱水结",o:"Brezel / Pretzel · 德语",c:"德国",cat:"bread",lv:"yeast",dg:"lean",fat:"none",heat:"bake",
+         d:"面团搓成绳、打成结，入碱水浸泡再烤，得到深褐发亮、带独特碱香的德国国民面包。",
+         t:"表皮韧而亮，内部柔软，粗海盐粒提供咸鲜爆点；慕尼黑吃法是配白香肠与甜芥末。",
+         x:"市面「碱水棒、碱水球」是同一面团的不同造型，本质都是碱水面包。"},
+        {id:"engmuffin",n:"英式马芬",o:"English Muffin · 英语",c:"英国",cat:"bread",lv:"yeast",dg:"lean",fat:"low",heat:"griddle",
+         d:"在平底锅里烙熟的小圆面饼，表面扑着玉米粉，横切开内部全是蜂窝孔——它是班尼迪克蛋的底座。",
+         t:"外微脆、内松软多孔，黄油能渗进每个蜂窝；一定要先掰开再烤，叉子掰比刀切更能保留孔洞。",
+         x:"和美式马芬零关系：一个是咸味烙饼面包，一个是杯装甜蛋糕。菜单上写 muffin 时，先确认是哪国。"},
+        {id:"pita",n:"皮塔饼",o:"Pita · 希腊语/阿拉伯语",c:"中东",cat:"bread",lv:"yeast",dg:"lean",fat:"none",heat:"bake",
+         d:"薄薄一枚面饼，进高温炉几十秒就鼓成气球，剖开是个天然口袋，万物皆可塞。",
+         t:"柔韧微焦，本身味道清淡，是为衬托馅料和蘸酱（鹰嘴豆泥、烤肉）而生的载体。",
+         x:"和馕的区别：皮塔薄而空心、靠蒸汽吹起；馕更厚实柔软、表面常刷油或酸奶。"},
+        {id:"naan",n:"馕",o:"Naan · 波斯语",c:"印度 · 中亚",cat:"bread",lv:"yeast",dg:"rich",fat:"low",heat:"bake",
+         d:"面团加酸奶揉制，贴在坦都炉内壁高温烤熟的大饼，边缘焦泡、中间柔软，是咖喱的最佳搭档。",
+         t:"撕起来有延展性，蒜香黄油版是餐厅点单王；刚出炉的边脆心软。",
+         x:"和皮塔比：馕实心、较厚、有酸奶；皮塔空心、极薄、无油无奶。"},
+        {id:"brioche",n:"布里欧修",o:"Brioche · 法语",c:"法国",cat:"bread",lv:"yeast",dg:"rich",fat:"high",heat:"bake",
+         d:"黄油和鸡蛋含量高到接近蛋糕的法国面包，金黄松软、奶香浓郁，常做成带头结的经典造型或切片吐司。",
+         t:"组织细腻拉丝、入口即化，甜咸皆宜；做汉堡胚是近年全球流行吃法，油脂能扛住肉汁。",
+         x:"和吐司的区别不在形状在配方：布里欧修的黄油蛋量是普通吐司的数倍，本质是「用面包工艺做的蛋糕」。"},
+        {id:"shokupan",n:"日式生吐司",o:"食パン Shokupan · 日语",c:"日本",cat:"bread",lv:"yeast",dg:"rich",fat:"mid",heat:"bake",
+         d:"用汤种法（先烫熟一部分面粉）做的方吐司，含水高、组织绵密拉丝，柔软到不用烤、撕着就能吃。",
+         t:"边也柔软（讲究的店连边都不切），奶香淡雅，空口吃像云朵；厚切烤黄油是进阶吃法。",
+         x:"和普通吐司比拼的是含水量与工艺：汤种锁水是它软过三天还不干的秘密。"},
+        {id:"pineapplebun",n:"菠萝包",o:"菠蘿包 · 粤语",c:"中国香港",cat:"bread",lv:"yeast",dg:"rich",fat:"mid",heat:"bake",
+         d:"甜面团顶着一层酥皮，烤后酥皮开裂成格纹——里头根本没有菠萝，是港式茶餐厅的头牌。",
+         t:"上层酥脆掉渣、下层松软微甜，冷热交替的菠萝油版本口感层次最完整。",
+         x:"和墨西哥海螺包是远亲：同样的酥皮盖逻辑，一个纹路像菠萝，一个像贝壳。"},
+        {id:"challah",n:"哈拉面包",o:"Challah · 希伯来语",c:"犹太传统",cat:"bread",lv:"yeast",dg:"rich",fat:"mid",heat:"bake",
+         d:"加蛋的金黄色编辫面包，三股、五股甚至六股辫造型，是犹太安息日晚餐的仪式主角。",
+         t:"组织绵密带蛋香，比布里欧修清淡（传统用油不用黄油，以符合犹太饮食戒律中肉奶分离的规矩）。",
+         x:"和布里欧修像亲戚：都是加蛋的油润面包；区别在哈拉用油不用奶、造型编辫、有宗教场合。"},
+        {id:"panettone",n:"潘妮托妮",o:"Panettone · 意大利语",c:"意大利",cat:"bread",lv:"sourdough",dg:"rich",fat:"high",heat:"bake",
+         d:"米兰的圣诞国民面包：天然酵种发酵的高筒面包，塞满酒渍果干与橙皮，松软得能拉丝，切开如蛋糕。",
+         t:"轻盈湿润、果香酒香交织，因为酸种与高油脂，放数周不坏；圣诞季意大利人均消费以公斤计。",
+         x:"和德国史多伦同为圣诞面包：潘妮托妮高、轻、用酸种；史多伦扁、实、裹糖粉。"},
+        {id:"stollen",n:"史多伦",o:"Stollen / Christstollen · 德语",c:"德国",cat:"bread",lv:"yeast",dg:"rich",fat:"high",heat:"bake",
+         d:"扁长的圣诞果干面包，塞满酒渍葡萄干与杏仁膏，出炉刷黄油、裹厚糖粉，像一条白色襁褓。",
+         t:"质地扎实、黄油香浓，糖粉层防潮保鲜；切片薄吃，配咖啡或热红酒。",
+         x:"和潘妮托妮是圣诞双璧：一个意大利高筒轻盈，一个德国扁平厚重。"},
+        {id:"cinnamonroll",n:"肉桂卷",o:"Kanelbulle · 瑞典语",c:"瑞典",cat:"pastry",lv:"yeast",dg:"rich",fat:"high",heat:"bake",
+         d:"肉桂黄油馅卷起的甜面包，是瑞典咖啡时刻的灵魂；瑞典甚至把 10 月 4 日定为「肉桂卷日」。",
+         t:"热吃最香，肉桂辛香与黄油交融；瑞典版干爽有嚼头，美版湿润绵软如蛋糕。",
+         x:"点单前先分清流派：北欧结型（清爽）vs 美式涡卷（甜腻糖霜），热量差出一截。"},
+        {id:"croissant",n:"可颂",o:"Croissant · 法语",c:"法国",cat:"pastry",lv:"yeast",dg:"laminated",fat:"high",heat:"bake",
+         d:"酵母面团裹住整块黄油、反复折叠出 27 层的月牙面包，烤后层层酥脆、内部蜂窝——它其实是维也纳移民。",
+         t:"好可颂的标准：外壳一捏咔嚓碎、切面蜂窝均匀、黄油香但不腻手。塌软、油浸纸袋的都是开酥失败。",
+         x:"和丹麦酥同为开酥加酵母：可颂无馅、造型月牙、吃本味；丹麦酥有馅、有造型、表面常上光。"},
+        {id:"danish",n:"丹麦酥",o:"Wienerbrød · 丹麦语",c:"丹麦",cat:"pastry",lv:"yeast",dg:"laminated",fat:"high",heat:"bake",
+         d:"开酥面团捏成花型，中间填卡仕达、果酱或杏仁馅的甜酥点——有趣的是，丹麦人管它叫「维也纳面包」。",
+         t:"酥层比可颂更甜更润，馅料是主角；回烤 3 分钟能恢复酥脆。",
+         x:"和可颂的分界：有没有馅与造型。可颂是素面月牙，丹麦酥是带馅的花。"},
+        {id:"millefeuille",n:"千层酥（拿破仑）",o:"Mille-feuille · 法语",c:"法国",cat:"pastry",lv:"steam",dg:"laminated",fat:"high",heat:"assemble",
+         d:"三层烤得焦香的酥皮夹两层卡仕达奶油，表面拉花糖霜——没有酵母，全靠黄油层间的水汽把层顶开。",
+         t:"吃的仪式感在「下刀」：必须用锯齿刀从侧面切，否则奶油全挤出来。酥脆与绵密在口中同时发生。",
+         x:"和可颂、丹麦酥同属开酥家族，但它无酵母、不发酵，层更薄、更脆，是纯粹的酥皮工艺。"},
+        {id:"eclair",n:"闪电泡芙",o:"Éclair · 法语",c:"法国",cat:"pastry",lv:"steam",dg:"choux",fat:"mid",heat:"assemble",
+         d:"泡芙面团挤成长条，烤成中空壳，灌入卡仕达、表面淋巧克力——是泡芙家族的长条担当。",
+         t:"壳要带一点韧性而非全脆，内馅冰凉绵密，巧克力淋面微苦平衡甜度；放久了壳吸潮变软，必须当天吃。",
+         x:"泡芙家族认形状：圆球是泡芙，长条是闪电泡芙，车轮环形是巴黎布雷斯特，面团都是同一锅烫面团。"},
+        {id:"macaron",n:"马卡龙",o:"Macaron · 法语",c:"法国",cat:"pastry",lv:"foam",dg:"meringue",fat:"low",heat:"assemble",
+         d:"杏仁粉加蛋白霜烤出的两片小圆饼，带一圈蕾丝「裙边」，夹上甘纳许——法式甜点的颜值与难度双料冠军。",
+         t:"外壳薄脆、内里微黏有嚼劲，杏仁香浓；甜度高是配方逻辑（糖是结构的一部分），配无糖茶或黑咖啡。",
+         x:"和意式杏仁饼、椰蓉蛋白饼是远房表亲：名字相近，原料和口感全然不同。"},
+        {id:"chiffon",n:"戚风蛋糕",o:"Chiffon Cake · 英语",c:"美国",cat:"cake",lv:"foam",dg:"batter",fat:"mid",heat:"bake",
+         d:"用植物油不用黄油、靠蛋白霜撑起的超轻蛋糕，湿润绵软不噎人，是华人烘焙圈的第一课。",
+         t:"组织细腻、弹性好，冷藏后依然柔软（黄油蛋糕冷藏会变硬，油不会）；中空烟囱模帮它爬高和散热。",
+         x:"和海绵蛋糕的区别只在油：戚风加植物油加分蛋，海绵全蛋打发不加油。戚风更润，海绵更挺、更适合做裱花底胚。"},
+        {id:"sponge",n:"海绵蛋糕",o:"Sponge Cake · 英语",c:"英国",cat:"cake",lv:"foam",dg:"batter",fat:"none",heat:"bake",
+         d:"全蛋（或蛋黄）加糖打发、不加油的元祖蛋糕，组织像海绵一样多孔吸水，英国维多利亚海绵是国民款。",
+         t:"口感轻盈但偏干，靠夹馅和糖浆补水；蛋香纯粹，是检验打发功力的试金石。",
+         x:"三姐妹辨认：海绵不加油、戚风加油、磅蛋糕加大量黄油——轻盈程度依次递减，浓郁程度递增。"},
+        {id:"pound",n:"磅蛋糕",o:"Pound Cake · 英语",c:"英国",cat:"cake",lv:"chem",dg:"batter",fat:"high",heat:"bake",
+         d:"面粉、黄油、鸡蛋、糖各一磅的等比蛋糕——名字就是配方本身，是识字率不高年代的口传菜谱。",
+         t:"组织紧密扎实、黄油香浓郁，常温耐放数日；切片厚吃、回烤后边角焦脆最佳。",
+         x:"和海绵、戚风同为基础蛋糕：磅蛋糕靠黄油与泡打粉，质地最实；做水果磅蛋糕、旅行蛋糕都用它打底。"},
+        {id:"tiramisu",n:"提拉米苏",o:"Tiramisù · 意大利语",c:"意大利",cat:"cake",lv:"none",dg:"batter",fat:"high",heat:"chill",
+         d:"手指饼干蘸咖啡酒，叠上马斯卡彭奶酪糊，冷藏定型、表面筛可可——全程不用烤箱的组装型蛋糕。",
+         t:"入口即化，咖啡的苦、酒香与奶酪的绵密一层层来；可可粉必须现筛，吸潮了就发苦发潮。",
+         x:"和芝士蛋糕别混：提拉米苏用马斯卡彭、免烤、结构是饼干加奶酪糊；芝士蛋糕以奶油奶酪为主体，多数要烤。"},
+        {id:"blackforest",n:"黑森林蛋糕",o:"Schwarzwälder Kirschtorte · 德语",c:"德国",cat:"cake",lv:"foam",dg:"batter",fat:"high",heat:"assemble",
+         d:"巧克力海绵、樱桃与樱桃酒、鲜奶油、巧克力屑的组合蛋糕，德国国宝级甜点，有原产地规格：必须用黑森林樱桃酒。",
+         t:"酒香樱桃的酸、巧克力的苦、奶油的轻三方平衡；樱桃酒是灵魂，儿童版省略它就只剩外形。",
+         x:"认准三要素：巧克力胚加樱桃酒加鲜奶油。缺了樱桃酒的只是「巧克力樱桃奶油蛋糕」。"},
+        {id:"basque",n:"巴斯克芝士蛋糕",o:"Basque Cheesecake · 英语",c:"西班牙",cat:"cake",lv:"none",dg:"batter",fat:"high",heat:"bake",
+         d:"故意用高温把表面烤焦的芝士蛋糕：焦黑苦香的外壳，里面是近乎流心的绵密——「烤糊了」是它的设计，不是事故。",
+         t:"焦面的微苦先到，接着是奶酪的浓与中心流心的润；冷藏后质地变扎实，两种吃法两种性格。",
+         x:"和纽约芝士正相反：巴斯克要焦面、要流心、无饼底；纽约芝士要平整无裂、配饼底、质地扎实。"},
+        {id:"nycheese",n:"纽约芝士蛋糕",o:"New York Cheesecake · 英语",c:"美国",cat:"cake",lv:"none",dg:"crumb",fat:"high",heat:"bake",
+         d:"奶油奶酪为主体的浓郁芝士蛋糕，坐在黄油饼干底上，表面平整如镜，质地扎实到叉子能立住。",
+         t:"厚重绵密、奶香直接，一小片就满足；饼底提供酥脆对比，表面常配酸奶油层或水果。",
+         x:"和巴斯克对着看：一个追求完美平整，一个拥抱焦黑粗糙——芝士蛋糕世界的两极。"},
+        {id:"souffle",n:"舒芙蕾",o:"Soufflé · 法语",c:"法国",cat:"cake",lv:"foam",dg:"batter",fat:"low",heat:"bake",
+         d:"蛋白霜撑起的云朵蛋糕，出炉后以分钟计地塌陷——必须现烤现吃，是甜点界著名的「不可等待」。",
+         t:"表面微焦、内部湿润如布丁与云朵之间，勺子挖下去有轻微的声响；巧克力与橙酒香是经典口味。",
+         x:"和戚风同为蛋白霜门派：戚风有面粉骨架、能久放；舒芙蕾几乎无骨架，出炉即巅峰。"},
+        {id:"baumkuchen",n:"年轮蛋糕",o:"Baumkuchen · 德语",c:"德国",cat:"cake",lv:"foam",dg:"batter",fat:"mid",heat:"bake",
+         d:"在旋转的炙叉上一层一层刷面糊、逐层烤熟的蛋糕，切开是树的年轮——做法即名字，德国婚礼的长寿象征。",
+         t:"每层边缘微焦、组织紧密有蛋香，口感比海绵更实、更耐嚼；薄切细品，或横切看年轮。",
+         x:"和千层可丽饼蛋糕别混：年轮是同一根轴上逐层烤熟的整棵「树」，可丽饼千层是分别煎好再叠的。"},
+        {id:"madeleine",n:"玛德琳",o:"Madeleine · 法语",c:"法国",cat:"cake",lv:"chem",dg:"batter",fat:"high",heat:"bake",
+         d:"贝壳模具烤出的小蛋糕，背后鼓一个标志性的小肚子——因为普鲁斯特的一口茶，它成了法国文学最有名的食物。",
+         t:"边缘微脆、中心柔软，黄油与柠檬皮香清新；出炉几分钟内最好吃，放久了就只剩外形。",
+         x:"和费南雪是邻居：都是法式小蛋糕；玛德琳是贝壳形、全蛋，费南雪是金砖形、只用蛋白加焦化黄油。"},
+        {id:"scone",n:"司康",o:"Scone · 英语",c:"英国",cat:"cake",lv:"chem",dg:"crumb",fat:"mid",heat:"bake",
+         d:"黄油搓进面粉成酥粒、加泡打粉快速烤成的小圆饼，掰开抹凝脂奶油与果酱——英式下午茶三层架的底层担当。",
+         t:"外微酥、内松软掉渣，黄油香温和；必须温热吃，凉了像啃砖——回烤三分钟可复活。",
+         x:"和美式马芬比：司康是搓沙面团、掰开抹酱；马芬是面糊倒模、整只拿着吃。和饼干比：司康更厚、更湿润、现烤现吃。"},
+        {id:"muffin",n:"美式马芬",o:"Muffin · 英语",c:"美国",cat:"cake",lv:"chem",dg:"batter",fat:"mid",heat:"bake",
+         d:"面糊倒进纸杯烤出的大块头蛋糕，顶着一朵蘑菇头——制作逻辑是「湿料干料一拌就烤」，粗放又快速。",
+         t:"顶部微脆、内部湿润松软，果粒是标配；个头大、一只顶半顿早餐。",
+         x:"先和英式马芬划清界限（见英式马芬词条）；和纸杯蛋糕的区别：马芬少糖少油、无裱花，是早餐；纸杯蛋糕是甜点。"},
+        {id:"brownie",n:"布朗尼",o:"Brownie · 英语",c:"美国",cat:"cake",lv:"chem",dg:"batter",fat:"high",heat:"bake",
+         d:"介于蛋糕与软曲奇之间的巧克力方块：高巧克力、低面粉，表面一层薄脆壳，内部湿润浓稠。",
+         t:"口感分两大流派：黏润如生巧与松软如蛋糕，配方上只差面粉与打发程度；加热配冰淇淋是经典。",
+         x:"和巧克力蛋糕的区别在比例：布朗尼面粉极少、没有蛋糕的蓬松感，浓密度才是追求。"},
+        {id:"tart",n:"水果挞",o:"Tarte · 法语",c:"法国",cat:"cake",lv:"none",dg:"crumb",fat:"mid",heat:"assemble",
+         d:"酥脆挞皮做「碗」，装卡仕达与当季水果的开放式甜点——挞的核心从来是那层挞皮。",
+         t:"皮的脆、卡仕达的绵、水果的酸鲜三层递进；水果必须亮泽新鲜，所以挞都是当天现做、摆在橱窗最显眼处。",
+         x:"菜单上挞与派别乱换：无盖开放式是挞，双皮或格纹盖顶是派。"},
+        {id:"danhuangsu",n:"蛋黄酥",o:"蛋黃酥 · 闽南语",c:"中国台湾",cat:"pastry",lv:"steam",dg:"laminated",fat:"high",heat:"bake",
+         d:"中式酥皮包住豆沙与整颗咸蛋黄的圆酥点：水油皮裹油酥、擀折出层层薄皮，是月饼之外全年卖得最好的中式酥点，台中糕饼师傅改良蛋黄月饼而来。",
+         t:"皮酥到掉渣，豆沙甜、蛋黄咸香起沙，咸甜对冲；现烤的蛋黄油润，老式做法用猪油起酥，香得更直接。",
+         x:"和蛋黄月饼的区别在皮：蛋黄酥是分层酥皮、一咬掉渣；广式月饼是糖浆皮、软而韧，造型靠模具压花。"},
+        {id:"laopobing",n:"老婆饼",o:"老婆餅 · 粤语",c:"中国",cat:"pastry",lv:"steam",dg:"laminated",fat:"mid",heat:"bake",
+         d:"潮汕酥饼：酥皮包着冬瓜蓉与椰蓉做的软馅，表面刷蛋液、撒芝麻；配方核心是那口清甜不腻的冬瓜馅，广式茶楼的常驻点心。",
+         t:"外皮层层起酥、轻得发空，内馅软糯微黏、甜度克制，配热茶是广式茶楼的经典一盅两件。",
+         x:"和老公饼是咸甜对子：老婆饼甜（冬瓜椰蓉），老公饼咸（椒盐肉馅）；和蛋黄酥比，它无蛋黄、馅更软、个头更扁。"},
+        {id:"taosu",n:"桃酥",o:"桃酥 · 汉语",c:"中国",cat:"pastry",lv:"chem",dg:"crumb",fat:"high",heat:"bake",
+         d:"油加糖粉搓成的酥粒面团压成圆饼，中间点一颗核桃仁——靠小苏打与碳酸氢铵在烤箱里胀出满面裂纹，是北京稻香村柜台里最耐放的一块。",
+         t:"入口即化、酥到要用手托着吃，油香与核桃香收尾；正宗的裂纹要自然开裂，边缘一碰就掉渣。",
+         x:"和粤式核桃酥是近亲：桃酥裂纹粗犷、偏干酥；核桃酥核桃含量更高、更油润。看配料表第一位是油还是粉，就能猜出酥的程度。"},
+        {id:"hudiesu",n:"蝴蝶酥",o:"Palmier · 法语",c:"法国",cat:"pastry",lv:"steam",dg:"laminated",fat:"high",heat:"bake",
+         d:"开酥面皮撒满砂糖、从两边向中间卷起再切片烤成的蝴蝶形酥饼——配方只有面皮和糖，全靠折叠层数与焦糖化；在上海，它是国际饭店的排队招牌。",
+         t:"薄脆、焦糖香带一点黄油的咸，咬下去层层碎裂；好的蝴蝶酥两翼对称、糖粒烤出琥珀色。",
+         x:"和千层酥（拿破仑）同用开酥面皮：蝴蝶酥是把面皮卷切成独立小饼、无夹馅；拿破仑是整片酥皮夹奶油组装。"},
+        {id:"xianhuabing",n:"鲜花饼",o:"鮮花餅 · 汉语",c:"中国",cat:"pastry",lv:"steam",dg:"laminated",fat:"mid",heat:"bake",
+         d:"云南玫瑰鲜花饼：酥皮包住用可食用重瓣玫瑰做的花酱，烤时花香透皮而出，是把春天封进饼里的做法，清代就是宫廷点心。",
+         t:"皮酥馅润，花香清甜不冲，酱里能吃到花瓣的纤维；烤箱复热十几秒，花香最浓。",
+         x:"和玫瑰月饼别混：鲜花饼是酥皮、花酱是主角、全年卖；月饼版多是糖浆皮加综合馅，玫瑰只是调味。"},
+        {id:"fenglisu",n:"凤梨酥",o:"鳳梨酥 Ông-lâi-soo · 闽南语",c:"中国台湾",cat:"pastry",lv:"none",dg:"crumb",fat:"high",heat:"bake",
+         d:"长方小模压出的酥皮砖，包着冬瓜掺凤梨熬成的酸甜馅——皮靠黄油与蛋黄，是台湾伴手礼的头号选手，讲究的店会标「土凤梨」纯果馅。",
+         t:"皮酥松带奶香，馅酸甜有纤维感；冬瓜馅顺滑偏甜，土凤梨馅酸劲足、能吃到果肉丝。",
+         x:"和凤凰酥只差一味：凤凰酥的馅里多加了咸蛋黄。买之前先看名字，别把咸甜口买错。"},
+        {id:"zaogao",n:"枣糕",o:"棗糕 · 汉语",c:"中国",cat:"cake",lv:"chem",dg:"batter",fat:"mid",heat:"bake",
+         d:"红枣打泥拌进面糊烤成的深色蛋糕，枣香压过一切——北京稻香村的柜台常年飘着它的味道，是北方人最认的「枣味」。",
+         t:"组织扎实湿润、枣甜浓郁带一点焦糖苦香，趁热吃最软；凉了切片用平底锅烙一下，边缘微脆更好吃。",
+         x:"和枣泥酥不是一回事：枣糕是整块面糊蛋糕、切着卖；枣泥酥是酥皮包枣泥馅的独立小饼。"},
+        {id:"xiaobei",n:"肉松小贝",o:"肉松小貝 · 汉语",c:"中国",cat:"cake",lv:"foam",dg:"batter",fat:"mid",heat:"assemble",
+         d:"小块戚风蛋糕裹满沙拉酱、再滚上一身海苔肉松的圆球点心——北京鲍师傅靠它排起长队，是「蛋糕做成零食」的代表作。",
+         t:"蛋糕绵软、酱的酸甜和肉松的咸鲜一起爆开，海苔芝麻提香；必须现做现吃，放半天肉松就回潮。",
+         x:"和肉松面包分清：小贝的芯是蛋糕、靠酱粘肉松；肉松面包的芯是面包、个头大得多，肉松常卷在里面或铺在表面。"},
+        {id:"pudanta",n:"葡式蛋挞",o:"Pastel de Nata · 葡萄牙语",c:"葡萄牙",cat:"pastry",lv:"steam",dg:"laminated",fat:"high",heat:"bake",
+         d:"千层酥皮托着焦斑蛋奶馅的蛋挞：高温快烤让表面烧出豹纹焦斑，源自里斯本修道院，经澳门红遍全中国——快餐店卖的蛋挞就是这一支。",
+         t:"挞皮酥脆掉层，蛋奶馅嫩滑、带焦糖的微苦，趁热吃皮和馅的温差最迷人；撒肉桂粉是葡国本土吃法。",
+         x:"和港式蛋挞对着看：葡式是酥皮、馅有焦斑、偏甜带奶香；港式分曲奇皮与酥皮两种，蛋面光滑发亮、甜度更收。"},
+        {id:"gangshidanta",n:"港式蛋挞",o:"蛋撻 Daan Tat · 粤语",c:"中国香港",cat:"pastry",lv:"none",dg:"crumb",fat:"mid",heat:"bake",
+         d:"港式茶餐厅与老饼家的镇店款：牛油曲奇皮（或酥皮）托着凝固如镜的蛋面，蛋香纯粹，讲究「面光、皮脆、腰身挺」。",
+         t:"曲奇皮香脆、蛋馅滑嫩微甜，一口下去先脆后嫩；刚出炉时蛋面微微晃动，是最佳赏味点。",
+         x:"蛋挞先分流派再比好吃：拿一只看皮——层层分明的是葡式或港式酥皮版，一捏成块、带牛油香的是曲奇皮版。"},
+        {id:"canele",n:"可露丽",o:"Canelé · 法语",c:"法国",cat:"cake",lv:"none",dg:"batter",fat:"mid",heat:"bake",
+         d:"波尔多的铜模小点心：牛奶蛋糊加朗姆酒与香草，高温烤出深焦糖硬壳，内里却是布丁般的蜂窝软芯——外壳的颜色就是它的身份证。",
+         t:"先脆后糯，焦糖苦香与朗姆酒香层层递进；出炉当天壳最脆，隔夜回软是常态，复烤能救回七成。",
+         x:"和玛德琳、费南雪同为法式小蛋糕：可露丽靠模具与焦化、不用打发；玛德琳靠泡打粉鼓肚子；费南雪靠焦化黄油与杏仁粉。"},
+        {id:"financier",n:"费南雪",o:"Financier · 法语",c:"法国",cat:"cake",lv:"chem",dg:"batter",fat:"high",heat:"bake",
+         d:"金砖造型的小蛋糕：焦化黄油（榛子黄油）加杏仁粉与蛋白，组织湿润紧实——在巴黎金融区得名，吃一口全是黄油与坚果的香。",
+         t:"边缘微焦、中心润而弹，杏仁香浓；因为只用蛋白，质地比全蛋蛋糕更细腻、更耐放。",
+         x:"和玛德琳是邻居：玛德琳贝壳形、用全蛋、靠泡打粉鼓起小肚子；费南雪金砖形、只用蛋白、香在焦化黄油。"},
+        {id:"shiopan",n:"海盐卷",o:"塩パン Shio Pan · 日语",c:"日本",cat:"bread",lv:"yeast",dg:"rich",fat:"mid",heat:"bake",
+         d:"卷着一条咸黄油的月牙小面包：烤时黄油融进底部煎出脆壳，表面撒粗海盐——日式面包房的国民款，这几年成了国内烘焙店的标配，又叫盐可颂、盐面包。",
+         t:"底部脆、中段韧、中心被黄油浸得油润，盐粒在舌尖爆开；刚出炉三分钟内是巅峰，凉了要复烤。",
+         x:"和可颂别认错：海盐卷是普通油润面团卷黄油条、不分层；可颂是面团裹整块黄油反复折叠，层是它的命。"},
+        {id:"zangzangbao",n:"脏脏包",o:"臟臟包 · 汉语",c:"中国",cat:"bread",lv:"yeast",dg:"laminated",fat:"high",heat:"bake",
+         d:"2017 年从北京火起来的网红面包：开酥面包包巧克力馅，出炉再淋巧克力、撒满可可粉——吃一口脏一手一脸，名字就是吃法警告。",
+         t:"酥层混着浓可可的苦甜，馅心微流；可可粉呛喉是特色，吃前别深呼吸是老饕的忠告。",
+         x:"和可颂是近亲改造：同样开酥加酵母，脏脏包把灵魂押在巧克力的量上；和巧克力丹麦酥的区别在造型与那层浮夸的可可粉外衣。"},
+        {id:"yerongbao",n:"椰蓉面包",o:"椰蓉包 · 汉语",c:"中国",cat:"bread",lv:"yeast",dg:"rich",fat:"mid",heat:"bake",
+         d:"甜面团包椰蓉馅（椰丝、黄油、糖、蛋）的基本款面包，表面常挤两道奶酥条——是几代人放学路上的味道，中式面包房的销量底盘。",
+         t:"面包松软、椰蓉馅香甜带嚼感，馅料分布不均反而是手工感的证明；微波十秒椰香最盛。",
+         x:"和鸡尾包是亲戚：鸡尾包是港式叫法，同为椰蓉馅，造型偏长、表面有两道酥皮纹；内地柜台多叫椰蓉包、椰丝包。"},
+        {id:"changzaibao",n:"肠仔包",o:"腸仔包 · 粤语",c:"中国香港",cat:"bread",lv:"yeast",dg:"rich",fat:"mid",heat:"bake",
+         d:"面团缠住一根脆皮肠的咸口面包，绕法是各家的手艺：螺旋、编辫、开口笑——港式与内地面包房共同的童年款，又叫香肠包、热狗包。",
+         t:"面包微甜、肠衣脆弹，表面刷蛋液烤得油亮；复烤后肠香最浓，是早餐柜里最稳妥的咸味选择。",
+         x:"和热狗分清：肠仔包的肠与面包一起进炉烤熟、连为一体；热狗是现成的面包夹现烤的肠，酱是后加的。"},
+        {id:"jidangao",n:"鸡蛋糕",o:"雞蛋糕 · 汉语",c:"中国",cat:"cake",lv:"foam",dg:"batter",fat:"low",heat:"bake",
+         d:"只有鸡蛋、糖、面粉的老式小蛋糕，全蛋打发、不加一滴奶——出炉金黄、蛋香扑鼻，是各地老饼家按斤称的国民点心。",
+         t:"松软微干、蛋香纯粹，边角带一点焦香；配豆浆或热茶正好，单独吃多了会觉得噎——它本来就是配饮的点心。",
+         x:"和海绵蛋糕是同一路数：鸡蛋糕是它的中式小模版、个头小、卖相朴素；西点房的海绵蛋糕多做成大块裱花底胚。"},
+        {id:"zhibaodangao",n:"纸包蛋糕",o:"紙包蛋糕 · 粤语",c:"中国香港",cat:"cake",lv:"foam",dg:"batter",fat:"low",heat:"bake",
+         d:"面糊倒进高高的烘焙纸杯里烤成的海绵蛋糕，顶部鼓起开裂如小山——港式饼家的经典，纸既是模具也是包装，撕开就能吃。",
+         t:"比普通海绵更轻更润，蛋香清甜，贴纸的部分带一点韧；趁温热吃，顶部裂口处最香。",
+         x:"和鸡蛋糕分大小与包装：纸包蛋糕个头大、纸杯成型、组织更湿润；鸡蛋糕小模成型、偏干香、按斤称卖。"},
+        {id:"paofu",n:"奶油泡芙",o:"Chou à la Crème · 法语",c:"法国",cat:"pastry",lv:"steam",dg:"choux",fat:"mid",heat:"assemble",
+         d:"烫面团挤成圆球、烤成中空脆壳，挤入冰凉的卡仕达或鲜奶油——泡芙家族的圆脸代表，和闪电泡芙共用同一锅面团。",
+         t:"壳要脆、馅要凉、注馅要满，现挤现吃是行规；放久了壳吸潮变皮，再好的馅也救不回来。",
+         x:"泡芙家族认形状（闪电泡芙词条讲过）：圆球是奶油泡芙，长条是闪电泡芙；菠萝皮泡芙是给圆球多加了一层酥皮外衣。"},
+        {id:"buttercookie",n:"黄油曲奇",o:"Butter Cookie · 英语",c:"丹麦",cat:"pastry",lv:"chem",dg:"crumb",fat:"high",heat:"bake",
+         d:"黄油、糖、面粉搓成的酥性面团，挤花或切片烤成小饼——蓝铁盒的丹麦版本把它做成了全球年节礼盒的通用语言，国内饼房则按片散卖。",
+         t:"酥松化口、黄油香直给，花纹深的边缘更脆；配红茶或咖啡时，甜度刚好被压住。",
+         x:"和桃酥同为酥粒面团门派：曲奇靠黄油、纹路精致；桃酥靠猪油或植物油、裂纹粗犷。闻香气就能分：奶香是曲奇，油香是桃酥。"},
+        {id:"crepecake",n:"千层蛋糕",o:"Mille Crêpes · 法语",c:"法国",cat:"cake",lv:"none",dg:"batter",fat:"mid",heat:"assemble",
+         d:"二十来张可丽饼逐张煎好、层层抹奶油叠成的蛋糕——没有一千层，二十层已经足够让切面美成横截面图；榴莲与芒果馅是国内最卖座的版本。",
+         t:"饼皮薄而韧、奶油清甜，一叉到底层层分明；冷藏后更好切，室温放十分钟奶油最顺滑。",
+         x:"和年轮蛋糕别混（年轮词条讲过）：千层是煎好再叠、层与层之间是奶油；年轮是在炙叉上逐层烤熟、层与层同为一体。"},
+        {id:"yanshao",n:"岩烧乳酪",o:"岩燒乳酪 · 汉语",c:"中国台湾",cat:"bread",lv:"yeast",dg:"rich",fat:"high",heat:"bake",
+         d:"厚切吐司（或软面包）表面抹一层乳酪酱再回炉烤到微焦流淌的点心：酱层像熔岩一样挂住面包——名字里的「岩」就是熔岩的岩。",
+         t:"乳酪咸甜浓郁、表面微焦、面包底吸满酱香；趁热吃绵软拉丝，凉了酱层凝固成另一副扎实口感。",
+         x:"和普通芝士吐司的区别在酱：岩烧是乳酪酱厚抹回烤成流动层；芝士片盖吐司只是把现成芝士烤化，厚度与焦香都差一截。"},
+        {id:"niushebing",n:"牛舌饼",o:"牛舌餅 · 汉语",c:"中国",cat:"pastry",lv:"steam",dg:"laminated",fat:"mid",heat:"bake",
+         d:"长椭圆如牛舌的酥饼：椒盐馅、层层起酥、表面粘满芝麻——北京稻香村的招牌之一，是北方茶食里咸口酥饼的代表。",
+         t:"酥皮掉渣、椒盐微麻咸香，芝麻越嚼越香；配一壶热茶，能把甜点心吃出的腻全压下去。",
+         x:"和圆形的椒盐酥是同一家门：牛舌饼特指长舌造型、芝麻满身；本质都是酥皮裹椒盐，看造型认人不会错。"},
+        {id:"ruanou",n:"软欧包",o:"軟歐包 · 汉语",c:"中国",cat:"bread",lv:"yeast",dg:"lean",fat:"low",heat:"bake",
+         d:"把欧洲硬欧「软化」的本土发明：低糖低油的面团掺全麦，包进核桃、蔓越莓、奶酪等馅，壳薄芯软——是国内面包房为本地胃口改良出的欧包。",
+         t:"麦香清淡、组织湿润有嚼劲，馅料是甜味担当；切片复烤后壳会短暂变脆，是它最像欧包的一刻。",
+         x:"和正宗欧包（乡村面包、酸面包）对着看：软欧的低油低糖像欧包，柔软度与塞馅逻辑却是亚洲面包——名字里的「软」字已经交了底。"}
+      ];
+
+      /* ================= 六个方面的取值 ================= */
+      const VARS = [
+        {key:"cat", label:"门类", hint:"它算哪一类", values:[
+          ["bread","面包"],["cake","蛋糕"],["pastry","酥点"]]},
+        {key:"dg", label:"面团基底", hint:"它的主体是什么形态", values:[
+          ["lean","精简面团"],["rich","油润面团"],["laminated","开酥面团"],["batter","面糊"],
+          ["choux","烫面团"],["crumb","酥粒面团"],["meringue","蛋白霜糊"]]},
+        {key:"lv", label:"膨松方式", hint:"它靠什么变松变大", values:[
+          ["yeast","酵母发酵"],["sourdough","天然酵种"],["chem","化学膨松（泡打粉）"],["foam","蛋液打发"],
+          ["steam","蒸汽膨松"],["none","不膨松"]]},
+        {key:"fat", label:"油脂", hint:"配方里油多不多", values:[
+          ["none","无油"],["low","少量油脂"],["mid","中等油脂"],["high","高油脂"]]},
+        {key:"heat", label:"熟成方式", hint:"最后怎么弄熟、定型", values:[
+          ["bake","烘烤"],["griddle","平底烙"],["boilbake","先煮后烤"],["chill","免烤冷藏"],["assemble","烤后组装"]]},
+        {key:"origin", label:"产地", hint:"它从哪儿来", values:[
+          ["法国","法国"],["意大利","意大利"],["德国","德国"],["英国","英国"],["美国","美国"],
+          ["西班牙","西班牙"],["丹麦","丹麦"],["瑞典","瑞典"],["日本","日本"],["中国香港","中国香港"],
+          ["波兰 · 犹太传统","波兰 · 犹太传统"],["犹太传统","犹太传统"],["中东","中东"],["印度 · 中亚","印度 · 中亚"],
+          ["中国","中国"],["中国台湾","中国台湾"],["葡萄牙","葡萄牙"]]}
+      ];
+      const NAME = {};
+      VARS.forEach(v => v.values.forEach(([k, nm]) => NAME[v.key + ":" + k] = nm));
+      function valOf(it, key){ return key === "origin" ? it.c : it[key]; }
+      function nameOf(key, val){ return NAME[key + ":" + val] || val; }
+
+      /* ================= 状态：每组一个集合，支持多选 ================= */
+      const sel = {cat:new Set(), dg:new Set(), lv:new Set(), fat:new Set(), heat:new Set(), origin:new Set()};
+      let query = "";
+
+      const groupsEl = document.getElementById("vargroups");
+      const gridEl = document.getElementById("grid");
+      const bigEl = document.getElementById("bignum");
+      const sumEl = document.getElementById("sumtext");
+      const selChipsEl = document.getElementById("selchips");
+      const clearBtn = document.getElementById("clearall");
+      const resCountEl = document.getElementById("rescount");
+      const noResEl = document.getElementById("noresult");
+
+      function matchText(it){
+        if(!query) return true;
+        return (it.n + it.o + it.c).toLowerCase().includes(query);
+      }
+      /* 组内多选是「或」（命中任一已选值即可），组与组之间是「且」 */
+      function matchSel(it, exceptKey){
+        return VARS.every(v => v.key === exceptKey || sel[v.key].size === 0 || sel[v.key].has(valOf(it, v.key)));
+      }
+      /* 某个取值现在的计数：在其余已选条件 + 搜索词之下，还剩几种带这个值 */
+      function countFor(v, value){
+        let n = 0;
+        for(const it of ITEMS){
+          if(valOf(it, v.key) === value && matchSel(it, v.key) && matchText(it)) n++;
+        }
+        return n;
+      }
+      function results(){
+        return ITEMS.filter(it => matchSel(it, null) && matchText(it));
+      }
+
+      /* ================= 渲染 ================= */
+      function render(){
+        /* 条件组 */
+        groupsEl.innerHTML = VARS.map(v => {
+          const picked = sel[v.key];
+          const chips = v.values.map(([value, nm]) => {
+            const cnt = countFor(v, value);
+            const isSel = picked.has(value);
+            const dis = !isSel && cnt === 0;
+            return `<button class="chip" data-var="${v.key}" data-val="${value}"
+              aria-pressed="${isSel}" ${dis ? "disabled" : ""}
+              aria-label="${v.label}：${nm}，${isSel ? "已选，再点取消这一项" : dis ? "与当前条件无匹配" : "还有 " + cnt + " 种"}">${nm}<span class="n">${cnt}</span></button>`;
+          }).join("");
+          const pickedNames = [...picked].map(x => nameOf(v.key, x)).join("、");
+          return `<section class="vargroup" aria-label="${v.label}">
+            <div class="vargroup-head"><h2 class="serif">${v.label}</h2>
+              ${picked.size ? `<span class="picked">已选：${pickedNames}</span>` : `<span class="hint">${v.hint} · 可多选</span>`}
+            </div>
+            <div class="chips">${chips}</div>
+          </section>`;
+        }).join("");
+        groupsEl.querySelectorAll(".chip").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const k = btn.dataset.var, val = btn.dataset.val;
+            if(sel[k].has(val)) sel[k].delete(val); else sel[k].add(val);
+            render();
+          });
+        });
+
+        /* 结果与计数 */
+        const res = results();
+        bigEl.textContent = res.length;
+        resCountEl.textContent = "共 " + res.length + " 种";
+        gridEl.innerHTML = res.map(it => `
+          <button class="card" data-id="${it.id}" aria-label="查看${it.n}详情">
+            <img src="assets/img/${it.id}.jpg" alt="${it.n}实拍图" loading="lazy" />
+            <div class="card-body">
+              <h3 class="serif">${it.n}</h3>
+              <p class="orig">${it.o} · ${it.c}</p>
+              <p class="def">${it.d}</p>
+              <p class="formula"><b>${nameOf("dg", it.dg)}</b> ＋ <b>${nameOf("lv", it.lv)}</b> ＋ <b>${nameOf("fat", it.fat)}</b></p>
+            </div>
+          </button>`).join("");
+        gridEl.querySelectorAll(".card").forEach(el =>
+          el.addEventListener("click", () => openDlg(el.dataset.id)));
+        noResEl.classList.toggle("show", res.length === 0);
+
+        /* 已选条件条：每个已选值一颗，点 ✕ 只取消那一项 */
+        const activePairs = [];
+        VARS.forEach(v => sel[v.key].forEach(val => activePairs.push({v, val})));
+        selChipsEl.innerHTML = activePairs.map(({v, val}) =>
+          `<button class="selchip" data-clear="${v.key}" data-val="${val}" aria-label="取消条件 ${v.label}：${nameOf(v.key, val)}"><span>${v.label}</span>${nameOf(v.key, val)}<i aria-hidden="true">✕</i></button>`
+        ).join("");
+        selChipsEl.querySelectorAll("[data-clear]").forEach(btn =>
+          btn.addEventListener("click", () => { sel[btn.dataset.clear].delete(btn.dataset.val); render(); }));
+        clearBtn.disabled = activePairs.length === 0 && !query;
+        if(activePairs.length === 0 && !query){
+          sumEl.innerHTML = "共收录 <b>" + ITEMS.length + "</b> 种经典烘焙品。点下面的条件，数字会跟着变。";
+        } else {
+          const parts = VARS.filter(v => sel[v.key].size).map(v =>
+            v.label + "「" + [...sel[v.key]].map(x => nameOf(v.key, x)).join("」或「") + "」");
+          if(query) parts.push(`名字含「${query}」`);
+          sumEl.innerHTML = "当前条件：" + parts.join(" ＋ ") + "，还剩 <b>" + res.length + "</b> 种。";
+        }
+      }
+
+      clearBtn.addEventListener("click", () => {
+        Object.keys(sel).forEach(k => sel[k].clear());
+        query = "";
+        document.getElementById("q").value = "";
+        render();
+      });
+      document.getElementById("q").addEventListener("input", e => {
+        query = e.target.value.trim().toLowerCase();
+        render();
+      });
+
+      /* ================= 详情弹窗 ================= */
+      const dlg = document.getElementById("dlg");
+      function openDlg(id){
+        const it = ITEMS.find(x => x.id === id);
+        if(!it) return;
+        document.getElementById("dlg-img").src = "assets/img/" + it.id + ".jpg";
+        document.getElementById("dlg-img").alt = it.n + "实拍图";
+        document.getElementById("dlg-name").textContent = it.n;
+        document.getElementById("dlg-orig").textContent = it.o;
+        document.getElementById("dlg-spec").innerHTML = VARS.map(v =>
+          `<div><dt>${v.label}</dt><dd>${nameOf(v.key, valOf(it, v.key))}</dd></div>`).join("");
+        document.getElementById("dlg-def").textContent = it.d;
+        document.getElementById("dlg-taste").textContent = it.t;
+        document.getElementById("dlg-confuse").textContent = it.x;
+        if(typeof dlg.showModal === "function") dlg.showModal();
+      }
+      document.getElementById("dlg-close").addEventListener("click", () => dlg.close());
+      dlg.addEventListener("click", e => { if(e.target === dlg) dlg.close(); });
+
+      document.getElementById("footcount").textContent = ITEMS.length;
+      render();
+    </script>
+  </body>
+</html>
