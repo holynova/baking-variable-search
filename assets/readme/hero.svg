@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="360" viewBox="0 0 1200 360"
+     role="img" aria-labelledby="title desc">
+  <title id="title">烘焙变量查询 — 60 种经典烘焙品，六个变量多选组合搜索</title>
+  <desc id="desc">暖米色烘焙风标题：烘焙变量查询，副标题六个变量多选组合搜索；右侧是筛选卡片：门类面包 22、蛋糕 21、酥点 17，与 60 种符合计数。</desc>
+
+  <rect width="1200" height="360" rx="26" fill="#faf3e7"/>
+
+  <g id="title-block" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <text x="56" y="62" font-size="19" letter-spacing="3" fill="#92400e">六个变量 · 多选组合搜索 · BAKING VARIABLE SEARCH</text>
+    <text x="56" y="128" font-size="58" font-weight="700" fill="#292524">烘焙变量查询</text>
+    <text x="56" y="168" font-size="23" fill="#57534e">60 种经典烘焙品，按条件找，一点就筛出来</text>
+    <text x="56" y="204" font-size="19" fill="#57534e">同方面多选是“或”，不同方面之间是“且”；零匹配自动变灰。</text>
+    <g id="chips" font-size="18" fill="#292524" text-anchor="middle">
+      <g><rect x="56" y="238" width="126" height="36" rx="18" fill="#ffffff" stroke="#e7ddd0" stroke-width="1.5"/><text x="119" y="262">60 种烘焙品</text></g>
+      <g><rect x="194" y="238" width="126" height="36" rx="18" fill="#ffffff" stroke="#e7ddd0" stroke-width="1.5"/><text x="257" y="262">6 个变量</text></g>
+      <g><rect x="332" y="238" width="150" height="36" rx="18" fill="#ffffff" stroke="#e7ddd0" stroke-width="1.5"/><text x="407" y="262">实时联动计数</text></g>
+      <g><rect x="494" y="238" width="150" height="36" rx="18" fill="#92400e"/><text x="569" y="262" fill="#ffffff">每种附实拍图</text></g>
+    </g>
+  </g>
+
+  <g id="filter-card" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <g id="filter-shapes">
+      <rect x="780" y="44" width="360" height="272" rx="16" fill="#ffffff" stroke="#e7ddd0" stroke-width="1.5"/>
+      <rect x="804" y="140" width="104" height="44" rx="22" fill="#faf3e7" stroke="#e7ddd0" stroke-width="1.5"/>
+      <rect x="920" y="140" width="104" height="44" rx="22" fill="#faf3e7" stroke="#e7ddd0" stroke-width="1.5"/>
+      <rect x="1036" y="140" width="80" height="44" rx="22" fill="#faf3e7" stroke="#e7ddd0" stroke-width="1.5"/>
+      <rect x="804" y="204" width="128" height="44" rx="22" fill="#fde68a" stroke="#d97706" stroke-width="2"/>
+      <rect x="944" y="204" width="128" height="44" rx="22" fill="#faf3e7" stroke="#e7ddd0" stroke-width="1.5"/>
+      <rect x="804" y="268" width="312" height="8" rx="4" fill="#f5efe3"/>
+      <rect x="804" y="268" width="255" height="8" rx="4" fill="#d97706"/>
+    </g>
+    <g id="filter-labels">
+      <text x="804" y="92" font-size="40" font-weight="700" fill="#292524">60 <tspan font-size="19" font-weight="400" fill="#57534e">种符合</tspan></text>
+      <text x="1032" y="92" font-size="18" fill="#57534e">清除全部</text>
+      <text x="804" y="126" font-size="19" font-weight="700" fill="#292524">门类</text>
+      <text x="804" y="126" font-size="19" fill="#57534e" text-anchor="start"><tspan x="856" y="126">它算哪一类 · 可多选</tspan></text>
+      <text x="856" y="169" font-size="19" fill="#292524" text-anchor="middle">面包 22</text>
+      <text x="972" y="169" font-size="19" fill="#292524" text-anchor="middle">蛋糕 21</text>
+      <text x="1076" y="169" font-size="19" fill="#292524" text-anchor="middle">酥点 17</text>
+      <text x="868" y="233" font-size="19" fill="#92400e" text-anchor="middle">酵母发酵 22</text>
+      <text x="1008" y="233" font-size="19" fill="#292524" text-anchor="middle">天然酵种 3</text>
+      <text x="804" y="300" font-size="18" fill="#57534e">烘烤 49 种 · 占 82%</text>
+    </g>
+  </g>
+</svg>
